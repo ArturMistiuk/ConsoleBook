@@ -11,7 +11,7 @@ from collections import UserDict
 
 
 class AddressBook(UserDict):
-asd
+
     address_book = {}
 
     def add_record(self, record):
