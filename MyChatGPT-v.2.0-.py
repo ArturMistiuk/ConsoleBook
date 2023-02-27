@@ -50,7 +50,7 @@ class Record:
     def days_to_birthday(self):
         this_birthday = date(self.birthday._current_date.year, self.birthday.value.month, self.birthday.value.day)
         next_birthday = date(self.birthday._current_date.year + 1, this_birthday.month, this_birthday.day)
-        
+
         if this_birthday > self.birthday._current_date:
             return (this_birthday - self.birthday._current_date).days
         else:
@@ -178,7 +178,7 @@ def advice():
     return instruction
 
 
-# +380934763845
+# +380934763834
 # This function changes phone number in a existing contact
 @input_error
 def change_number(name):
