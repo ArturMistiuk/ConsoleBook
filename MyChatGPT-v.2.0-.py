@@ -207,6 +207,14 @@ def close_bot():
     return instruction
 
 
+def days_to_birthday(name):
+    record_name = Name()
+    record_name.value = name
+    if record_name.value in contact_book:    # Checks that contact with given name is exist
+        record = Record(record_name.value, contact_book[record_name.value])
+        record.days_to_birthday()
+        
+
 @input_error
 def del_number(name):
     record_name = Name()
