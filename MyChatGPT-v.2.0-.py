@@ -132,20 +132,6 @@ class Phone(Field):
         self._phones.append(phone)
 
 
-def iterating(n):
-    for record in contact_book.iterator(n):
-        print(record)
-
-
-def chunks(seq, n):
-    it = iter(seq)
-    while True:
-        t = tuple(itertools.islice(it, int(n)))
-        if len(t) == 0:
-            break
-        yield t
-
-
 # A decorator block to handle user input errors.
 def input_error(func):
     def inner(arguments):
@@ -154,8 +140,8 @@ def input_error(func):
             return result
         except KeyError or IndexError:
             return 'Wrong arguments!'
-        #except TypeError:
-        #    return 'Wrong command!'
+        except TypeError:
+            return 'Wrong command!'
         except NumberException:
             return 'Incorrect number! Write in the format: +380123456789. Numbers were not accepted!'
         except InvalidBirthday:
@@ -200,6 +186,15 @@ def change_number(name):
         return f'{name} does not exist in contacts. Try to create new contact.'
 
 
+def chunks(seq, n):
+    it = iter(seq)
+    while True:
+        t = tuple(itertools.islice(it, int(n)))
+        if len(t) == 0:
+            break
+        yield t
+
+
 def close_bot():
     instruction = 'Good bye!'
     return instruction
@@ -233,6 +228,11 @@ def get_contacts():
 # Shows all phone numbers
 def get_phone(name):
     return f"{name}'s phone numbers are: {contact_book[name]}"
+
+
+def iterating(n):
+    for record in contact_book.iterator(n):
+        print(record)
 
 
 @input_error
