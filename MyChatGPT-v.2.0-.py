@@ -36,7 +36,7 @@ class Record:
 
     def change_number(self):
         print(get_phone(self.name))
-        i = int(input('Which number you want to change?(Write sequence number)\n')) - 1
+        i = int(input('Which number you want to change?(Write sequence number)\n')) - 1 
         new_num = input('Write new number:\n')
         self.phones[i] = new_num
         return f'Number has been changed. Numbers: {self.phones}'
@@ -210,10 +210,11 @@ def close_bot():
 def days_to_birthday(name):
     record_name = Name()
     record_name.value = name
+
     if record_name.value in contact_book:    # Checks that contact with given name is exist
         record = Record(record_name.value, contact_book[record_name.value])
         record.days_to_birthday()
-        
+
 
 @input_error
 def del_number(name):
