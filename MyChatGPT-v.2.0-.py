@@ -50,6 +50,7 @@ class Record:
     def days_to_birthday(self):
         this_birthday = date(self.birthday._current_date.year, self.birthday.value.month, self.birthday.value.day)
         next_birthday = date(self.birthday._current_date.year + 1, this_birthday.month, this_birthday.day)
+        
         if this_birthday > self.birthday._current_date:
             return (this_birthday - self.birthday._current_date).days
         else:
@@ -123,6 +124,7 @@ class Phone(Field):
     @value.setter
     def value(self, phone):
         match = re.match(r'\+\d{12}', phone)  # Pattern for phone number
+
         if match:
             self._value = phone
         else:
@@ -155,14 +157,17 @@ def add_contact(*args):
     contact_phone = Phone()
     contact_birthday = Birthday()
     contact_name.value = args[0]
+
     try:
         contact_birthday.value = args[-1]
         args = args[1:-1]
     except ValueError:
         args = args[1:]
+
     for arg in args:
         contact_phone.value = arg
         contact_phone._phones.append(contact_phone.value)
+
     contact_record = Record(contact_name.value, contact_phone._phones, contact_birthday)
     contact_book.add_record(contact_record)    # Add new contact with name and phone number
     return f'New contact {contact_name.value} with numbers {contact_phone._phones} have been added'
@@ -179,6 +184,7 @@ def advice():
 def change_number(name):
     record_name = Name()
     record_name.value = name
+
     if record_name.value in contact_book:    # Checks that contact with given name is exist
         record = Record(record_name.value, contact_book[record_name.value])
         return record.change_number()
@@ -188,6 +194,7 @@ def change_number(name):
 
 def chunks(seq, n):
     it = iter(seq)
+
     while True:
         t = tuple(itertools.islice(it, int(n)))
         if len(t) == 0:
@@ -204,6 +211,7 @@ def close_bot():
 def del_number(name):
     record_name = Name()
     record_name.value = name
+
     if record_name.value in contact_book:    # Checks that contact with given name is exist
         record = Record(record_name.value, contact_book[record_name.value])
         return record.del_number()
@@ -239,6 +247,7 @@ def iterating(n):
 def new_number(name):
     record_name = Name()
     record_name.value = name
+
     if record_name.value in contact_book:
         new_phone_number = input('Write a number: ')
         record = Record(record_name.value, contact_book[record_name.value])
