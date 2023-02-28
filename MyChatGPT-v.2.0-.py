@@ -36,7 +36,7 @@ class Record:
 
     def change_number(self):
         print(get_phone(self.name))
-        i = int(input('Which number you want to change?(Write sequence number)\n')) - 1 
+        i = int(input('Which number you want to change?(Write sequence number)\n')) - 1
         new_num = input('Write new number:\n')
         self.phones[i] = new_num
         return f'Number has been changed. Numbers: {self.phones}'
@@ -97,10 +97,7 @@ class Name(Field):
 
     @value.setter
     def value(self, name):
-        if name in contact_book.data.keys():  # Checking for an already existing name in memory
-            raise ValueError(f'Contact with {name} already created. Try to change it.')
-        else:
-            self._value = name       # super(Name, Name)
+        self._value = name       # super(Name, Name)
 
 
 class NumberException(Exception):
@@ -207,13 +204,15 @@ def close_bot():
     return instruction
 
 
-def days_to_birthday(name):
+# FIXME
+def birthdate(name):
     record_name = Name()
     record_name.value = name
 
     if record_name.value in contact_book:    # Checks that contact with given name is exist
+        print(contact_book[record_name.value])
         record = Record(record_name.value, contact_book[record_name.value])
-        record.days_to_birthday()
+        return record.days_to_birthday()
 
 
 @input_error
@@ -284,6 +283,7 @@ COMMANDS_WITHOUT_ARGS = {
 }
 # # List of commands that take arguments and their command-words
 COMMANDS = {
+    'birthday': birthdate,
     'iter': iterating,
     'new_number': new_number,
     'add': add_contact,
