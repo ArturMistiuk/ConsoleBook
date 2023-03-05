@@ -56,32 +56,35 @@ class Record:
 
     def _get_index(self):
         print(get_phone(self.name))
-        i = int(input('Which number you want to change?(Write sequence number)\n')) - 1
-        return i
+        index = int(input('Which number you want to change?(Write sequence number)\n')) - 1
+        return index
 
     def change_number(self):
-        i = self._get_index()
+        index = self._get_index()
         new_num = input('Write new number:\n')
         try:
-            self.phones[i] = new_num
+            self.phones[index] = new_num
         except IndexError:
             self.add_number(new_num)
         return f'Number has been changed. Numbers: {self.phones}'
 
     def del_number(self):
-        i = self._get_index()
-        self.phones.remove(self.phones[i])
+        index = self._get_index()
+        self.phones.remove(self.phones[index])
         return f'Number has been deleted. Numbers : {self.phones}'
 
     def days_to_birthday(self):
-        self.birthday._current_date = datetime.today().date()
-        this_birthday = date(self.birthday._current_date.year, self.birthday.value.month, self.birthday.value.day)
-        next_birthday = date(self.birthday._current_date.year + 1, this_birthday.month, this_birthday.day)
+        current_date = datetime.today().date()
+        self.birthday._value = datetime.strptime(self.birthday.value, '%d-%m-%Y').date()
+        this_birthday = date(current_date.year, self.birthday.value.month, self.birthday.value.day)
+        next_birthday = date(current_date.year + 1, this_birthday.month, this_birthday.day)
 
-        if this_birthday > self.birthday._current_date:
-            return (this_birthday - self.birthday._current_date).days
+        if this_birthday > current_date:
+            days_left = (this_birthday - current_date).days
         else:
-            return (next_birthday - self.birthday._current_date).days
+            days_left = (next_birthday - current_date).days
+
+        return f'Until birthday {days_left} day(s) left'
 
 
 class Field:
@@ -101,7 +104,6 @@ class Birthday(Field):
 
     def __init__(self):
         super().__init__()
-        self._current_date = None
 
     @property
     def value(self):
@@ -109,7 +111,7 @@ class Birthday(Field):
 
     @value.setter
     def value(self, birthday):
-        self._value = datetime.strptime(birthday, '%d-%m-%Y').date()
+        self._value = birthday
 
 
 class Name(Field):
@@ -145,8 +147,16 @@ class Phone(Field):
         else:
             raise NumberException
 
+    @property
+    def phones(self):
+        return self._phones
+
+    @phones.setter
+    def phones(self, value):
+        self._phones = value
+
     def append(self, phone):
-        self._phones.append(phone)
+        self.phones.append(phone)
 
 
 # Block with custom Exceptions
@@ -170,7 +180,8 @@ def input_error(func):
         except TypeError:
             return 'Wrong command!'
         except NumberException:
-            return 'Incorrect number! Write in the format: +380123456789. Numbers were not accepted!'
+            return 'Incorrect number or birthday! Write in the format: +380123456789 and dd-mm-yyyy. ' \
+                   'Data was not accepted!'
         except InvalidBirthday:
             return 'Invalid birthdate! Write in the format: yyyy-mm-dd'
     return inner
@@ -211,15 +222,15 @@ def add_contact(*args):
 
     for arg in args:
         contact_phone.value = arg
-        contact_phone._phones.append(contact_phone.value)
+        contact_phone.phones.append(contact_phone.value)
 
-    contact_record = Record(contact_name.value, contact_phone._phones, contact_birthday)
+    contact_record = Record(contact_name.value, contact_phone.phones, contact_birthday)
     contact_book.add_record(contact_record)    # Add new contact with name and phone number
     if contact_birthday.value:
-        return f'New contact {contact_name.value} with numbers {contact_phone._phones} ' \
+        return f'New contact {contact_name.value} with numbers {contact_phone.phones} ' \
                f'and birthdate {contact_birthday.value} have been added.'
     else:
-        return f'New contact {contact_name.value} with numbers {contact_phone._phones}'
+        return f'New contact {contact_name.value} with numbers {contact_phone.phones}'
 
 
 def advice():
@@ -229,12 +240,12 @@ def advice():
 
 def calculate_days_to_birthday(name):
     record_name = Name()
-    # record_birthday = Birthday()
+    record_birthday = Birthday()
     record_name.value = name
+    record_birthday.value = contact_book[record_name.value][-1]
 
     if record_name.value in contact_book:    # Checks that contact with given name is exist
-        # record_birthday.value = contact_book[record_name.value][-1]    Exception
-        record = Record(record_name.value, contact_book[record_name.value])
+        record = Record(record_name.value, contact_book[record_name.value], record_birthday)
         return record.days_to_birthday()
 
 
