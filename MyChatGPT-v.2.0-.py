@@ -4,23 +4,43 @@ from the keyboard and responds to this command.
 """
 
 
-import re
+import io
 import itertools
-
+import pickle
+import re
 
 from collections import UserDict
-from datetime import datetime, date
+from datetime import date, datetime
 
 
 class AddressBook(UserDict):
 
-    address_book = {}
+    def __init__(self, filename):
+
+        super().__init__()
+
+        self.filename = filename
+        try:
+            with open(self.filename, 'rb') as file:
+                self.data = pickle.load(file)
+        except (FileNotFoundError, EOFError):   # File is empty or not founded
+            self.data = {}
+
+    def __del__(self):
+        with io.open(self.filename, 'wb') as f:
+            pickle.dump(self.data, f)
 
     def add_record(self, record):
-        self.data[record.name] = record.phones
+        self.data[record.name] = record.phones, record.birthday.value
 
-    def iterator(self, n):
-        return chunks(self.data.items(), n)
+    def find_contact(self, request):
+        for name, phones in self.data.items():
+            if request.lower() in name.lower() or any(request in phone for phone in phones):
+                return f'Contact was found: {name} {self.data[name]}'
+        return f'Your request was not found!'
+
+    def iterator(self, chunk_len):
+        return chunks(self.data.items(), chunk_len)
 
 
 class Record:
@@ -34,20 +54,27 @@ class Record:
         self.phones.append(number)
         return f'Contact {self.name} has been changed. Phone numbers: {self.phones}'
 
-    def change_number(self):
+    def _get_index(self):
         print(get_phone(self.name))
         i = int(input('Which number you want to change?(Write sequence number)\n')) - 1
+        return i
+
+    def change_number(self):
+        i = self._get_index()
         new_num = input('Write new number:\n')
-        self.phones[i] = new_num
+        try:
+            self.phones[i] = new_num
+        except IndexError:
+            self.add_number(new_num)
         return f'Number has been changed. Numbers: {self.phones}'
 
     def del_number(self):
-        print(get_phone(self.name))
-        i = int(input('Which number you want to delete?(Write sequence number)\n')) - 1
+        i = self._get_index()
         self.phones.remove(self.phones[i])
         return f'Number has been deleted. Numbers : {self.phones}'
 
     def days_to_birthday(self):
+        self.birthday._current_date = datetime.today().date()
         this_birthday = date(self.birthday._current_date.year, self.birthday.value.month, self.birthday.value.day)
         next_birthday = date(self.birthday._current_date.year + 1, this_birthday.month, this_birthday.day)
 
@@ -74,7 +101,7 @@ class Birthday(Field):
 
     def __init__(self):
         super().__init__()
-        self._current_date = datetime.today().date()
+        self._current_date = None
 
     @property
     def value(self):
@@ -82,7 +109,6 @@ class Birthday(Field):
 
     @value.setter
     def value(self, birthday):
-        datetime.strptime(birthday, '%d-%m-%Y')
         self._value = datetime.strptime(birthday, '%d-%m-%Y').date()
 
 
@@ -97,15 +123,7 @@ class Name(Field):
 
     @value.setter
     def value(self, name):
-        self._value = name       # super(Name, Name)
-
-
-class NumberException(Exception):
-    pass
-
-
-class InvalidBirthday(Exception):
-    pass
+        self._value = name
 
 
 class Phone(Field):
@@ -131,6 +149,16 @@ class Phone(Field):
         self._phones.append(phone)
 
 
+# Block with custom Exceptions
+
+class NumberException(Exception):
+    pass
+
+
+class InvalidBirthday(Exception):
+    pass
+
+
 # A decorator block to handle user input errors.
 def input_error(func):
     def inner(arguments):
@@ -146,6 +174,26 @@ def input_error(func):
         except InvalidBirthday:
             return 'Invalid birthdate! Write in the format: yyyy-mm-dd'
     return inner
+
+
+# Currying
+@input_error
+def handler(command):
+    if command in COMMANDS:
+        return COMMANDS[command]
+    else:
+        return COMMANDS_WITHOUT_ARGS[command]
+
+
+# Handling user commands
+@input_error
+def reply(user_command):
+    if user_command.lower() not in COMMANDS_WITHOUT_ARGS:    # Checking if given command has arguments
+        command, args = user_command.split(' ')[0].lower(), user_command.split(' ')[1:]    # Separate command, arguments
+        instruction = handler(command)    # Instruction is a signature of given function by user
+        return instruction(*args)    # Execute command with arguments given by user
+    else:
+        return handler(user_command.lower())()    # Execute command without any arguments
 
 
 # In this block, the bot saves a new contact in memory.
@@ -167,12 +215,27 @@ def add_contact(*args):
 
     contact_record = Record(contact_name.value, contact_phone._phones, contact_birthday)
     contact_book.add_record(contact_record)    # Add new contact with name and phone number
-    return f'New contact {contact_name.value} with numbers {contact_phone._phones} have been added'
+    if contact_birthday.value:
+        return f'New contact {contact_name.value} with numbers {contact_phone._phones} ' \
+               f'and birthdate {contact_birthday.value} have been added.'
+    else:
+        return f'New contact {contact_name.value} with numbers {contact_phone._phones}'
 
 
 def advice():
     instruction = "How can I help you?"
     return instruction
+
+
+def calculate_days_to_birthday(name):
+    record_name = Name()
+    # record_birthday = Birthday()
+    record_name.value = name
+
+    if record_name.value in contact_book:    # Checks that contact with given name is exist
+        # record_birthday.value = contact_book[record_name.value][-1]    Exception
+        record = Record(record_name.value, contact_book[record_name.value])
+        return record.days_to_birthday()
 
 
 # +380934763834
@@ -189,30 +252,20 @@ def change_number(name):
         return f'{name} does not exist in contacts. Try to create new contact.'
 
 
-def chunks(seq, n):
-    it = iter(seq)
+def chunks(seq, chunk_len):
+
+    iterable = iter(seq)
 
     while True:
-        t = tuple(itertools.islice(it, int(n)))
-        if len(t) == 0:
+        chunk = tuple(itertools.islice(iterable, int(chunk_len)))
+        if len(chunk) == 0:
             break
-        yield t
+        yield chunk
 
 
 def close_bot():
     instruction = 'Good bye!'
     return instruction
-
-
-# FIXME
-def birthdate(name):
-    record_name = Name()
-    record_name.value = name
-
-    if record_name.value in contact_book:    # Checks that contact with given name is exist
-        print(contact_book[record_name.value])
-        record = Record(record_name.value, contact_book[record_name.value])
-        return record.days_to_birthday()
 
 
 @input_error
@@ -227,13 +280,8 @@ def del_number(name):
         return f'{name} does not exist in contacts. Try to create new contact.'
 
 
-# Currying
-@input_error
-def handler(command):
-    if command in COMMANDS:
-        return COMMANDS[command]
-    else:
-        return COMMANDS_WITHOUT_ARGS[command]
+def search(request):
+    return contact_book.find_contact(request)
 
 
 # Shows all contacts
@@ -242,10 +290,12 @@ def get_contacts():
 
 
 # Shows all phone numbers
+@input_error
 def get_phone(name):
     return f"{name}'s phone numbers are: {contact_book[name]}"
 
 
+@input_error
 def iterating(n):
     for record in contact_book.iterator(n):
         print(record)
@@ -262,17 +312,6 @@ def new_number(name):
         return record.add_number(new_phone_number)
 
 
-# Handling user commands
-@input_error
-def reply(user_command):
-    if user_command.lower() not in COMMANDS_WITHOUT_ARGS:    # Checking if given command has arguments
-        command, args = user_command.split(' ')[0].lower(), user_command.split(' ')[1:]    # Separate command, arguments
-        instruction = handler(command)    # Instruction is a signature of given function by user
-        return instruction(*args)    # Execute command with arguments given by user
-    else:
-        return handler(user_command.lower())()    # Execute command without any arguments
-
-
 # List of commands that don't take arguments and their command-words
 COMMANDS_WITHOUT_ARGS = {
     'close': close_bot,
@@ -283,16 +322,18 @@ COMMANDS_WITHOUT_ARGS = {
 }
 # # List of commands that take arguments and their command-words
 COMMANDS = {
-    'birthday': birthdate,
-    'iter': iterating,
-    'new_number': new_number,
     'add': add_contact,
+    'calc_birthday': calculate_days_to_birthday,
     'change_number': change_number,
     'del_number': del_number,
+    'find': search,
+    'iter': iterating,
     'phone': get_phone,
+    'new_number': new_number,
 }
 # Book of contacts
-contact_book = AddressBook()
+file_name = 'Contacts.txt'
+contact_book = AddressBook(file_name)
 
 
 def main():
