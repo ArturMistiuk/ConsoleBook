@@ -9,6 +9,8 @@ import itertools
 import pickle
 import re
 
+
+from abc import ABC, abstractmethod
 from collections import UserDict
 from datetime import date, datetime
 
@@ -159,8 +161,23 @@ class Phone(Field):
         self.phones.append(phone)
 
 
-# Block with custom Exceptions
+# Block with output interface
+# Abstract class for output
+class OutputInterface(ABC):
 
+    @abstractmethod
+    def show_contacts(self, *args, **kwargs):
+        pass
+
+
+# output contacts
+class ConsoleInterface(OutputInterface):
+
+    def show_contacts(self, *args, **kwargs):
+        return contact_book
+
+
+# Block with custom Exceptions
 class NumberException(Exception):
     pass
 
@@ -297,7 +314,8 @@ def search(request):
 
 # Shows all contacts
 def get_contacts():
-    return contact_book
+    output_book = ConsoleInterface()
+    return output_book.show_contacts()
 
 
 # Shows all phone numbers
